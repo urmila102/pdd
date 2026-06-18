@@ -1,0 +1,14 @@
+{
+  "name": "appium-tests",
+  "version": "1.0.0",
+  "description": "Appium Mobile End-to-End Testing Suite for SpendSense Android App",
+  "main": "appium-test.js",
+  "scripts": {
+    "test": "node appium-test.js",
+    "dry-run": "node dry-run.js"
+  },
+  "dependencies": {
+    "exceljs": "^4.4.0",
+    "webdriverio": "^8.38.0"
+  }
+}

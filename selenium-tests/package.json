@@ -1,0 +1,13 @@
+{
+  "name": "selenium-tests",
+  "version": "1.0.0",
+  "description": "Selenium Web End-to-End Testing Suite for SpendSense",
+  "main": "selenium-test.js",
+  "scripts": {
+    "test": "node selenium-test.js"
+  },
+  "dependencies": {
+    "exceljs": "^4.4.0",
+    "selenium-webdriver": "^4.22.0"
+  }
+}

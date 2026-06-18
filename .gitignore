@@ -1,0 +1,13 @@
+# Dependencies
+node_modules/
+**/node_modules/
+
+# Local databases
+server/db.json
+
+# Local reports
+**/*.xlsx
+
+# Environment/OS files
+.DS_Store
+Thumbs.db

@@ -12,12 +12,66 @@ const CATEGORIES = [
   { id: 'other',     label: 'Other',      icon: '📦' },
 ];
 
-let expenses = JSON.parse(localStorage.getItem('spendsense_expenses') || '[]');
-let budget   = parseFloat(localStorage.getItem('spendsense_budget') || '0');
+let expenses = [];
+let budget   = 0;
 let selectedCat = '';
 
+// ── Backend Configuration and Handlers ──
+const API_BASE = (
+  window.location.hostname === 'localhost' && window.location.port === '8080'
+) ? 'http://localhost:5000' : (
+  (window.location.hostname === 'localhost' || window.location.hostname === '') ? 'http://10.0.2.2:5000' : 'http://localhost:5000'
+);
+
+let isBackendOnline = false;
+
+async function checkBackend() {
+  try {
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 1200);
+    const res = await fetch(`${API_BASE}/`, { method: 'GET', signal: controller.signal });
+    clearTimeout(timeoutId);
+    isBackendOnline = res.ok;
+  } catch (e) {
+    isBackendOnline = false;
+  }
+}
+
+async function fetchBudget() {
+  await checkBackend();
+  if (isBackendOnline) {
+    try {
+      const res = await fetch(`${API_BASE}/api/budget`);
+      const data = await res.json();
+      budget = parseFloat(data.budget) || 0;
+      localStorage.setItem('spendsense_budget', budget);
+    } catch (e) {
+      console.warn('Failed to fetch budget from backend, using local:', e);
+      budget = parseFloat(localStorage.getItem('spendsense_budget') || '0');
+    }
+  } else {
+    budget = parseFloat(localStorage.getItem('spendsense_budget') || '0');
+  }
+}
+
+async function fetchExpenses() {
+  await checkBackend();
+  if (isBackendOnline) {
+    try {
+      const res = await fetch(`${API_BASE}/api/expenses`);
+      expenses = await res.json();
+      localStorage.setItem('spendsense_expenses', JSON.stringify(expenses));
+    } catch (e) {
+      console.warn('Failed to fetch expenses from backend, using local:', e);
+      expenses = JSON.parse(localStorage.getItem('spendsense_expenses') || '[]');
+    }
+  } else {
+    expenses = JSON.parse(localStorage.getItem('spendsense_expenses') || '[]');
+  }
+}
+
 // ── Init ──
-function init() {
+async function init() {
   document.getElementById('todayDate').textContent =
     new Date().toLocaleDateString('en-IN', { weekday:'short', day:'numeric', month:'short', year:'numeric' });
   document.getElementById('currentMonth').textContent =
@@ -28,6 +82,11 @@ function init() {
 
   buildCategoryPicker();
   buildFilterDropdown();
+
+  // Load from database if available
+  await fetchBudget();
+  await fetchExpenses();
+
   renderDashboard();
   renderHistory();
   renderBudgetPage();
@@ -64,7 +123,7 @@ function buildFilterDropdown() {
 }
 
 // ── Add Expense ──
-function addExpense() {
+async function addExpense() {
   const desc   = document.getElementById('expDesc').value.trim();
   const amount = parseFloat(document.getElementById('expAmount').value);
   const date   = document.getElementById('expDate').value;
@@ -86,6 +145,23 @@ function addExpense() {
   expenses.unshift(expense);
   save();
 
+  await checkBackend();
+  if (isBackendOnline) {
+    try {
+      await fetch(`${API_BASE}/api/expenses`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(expense)
+      });
+      // fetch latest list to be sure
+      const res = await fetch(`${API_BASE}/api/expenses`);
+      expenses = await res.json();
+      save();
+    } catch (e) {
+      console.error('Failed to save to backend, saved locally:', e);
+    }
+  }
+
   // reset
   document.getElementById('expDesc').value   = '';
   document.getElementById('expAmount').value = '';
@@ -106,30 +182,64 @@ function showFeedback(el, msg, type) {
 }
 
 // ── Delete ──
-function deleteExpense(id) {
+async function deleteExpense(id) {
   expenses = expenses.filter(e => e.id !== id);
   save();
+
+  await checkBackend();
+  if (isBackendOnline) {
+    try {
+      await fetch(`${API_BASE}/api/expenses/${id}`, { method: 'DELETE' });
+    } catch (e) {
+      console.error('Failed to delete from backend:', e);
+    }
+  }
+
   renderDashboard();
   renderHistory();
   renderBudgetPage();
 }
 
-function clearAll() {
+async function clearAll() {
   if (!confirm('Delete all expenses? This cannot be undone.')) return;
   expenses = [];
   save();
+
+  await checkBackend();
+  if (isBackendOnline) {
+    try {
+      await fetch(`${API_BASE}/api/expenses`, { method: 'DELETE' });
+    } catch (e) {
+      console.error('Failed to clear from backend:', e);
+    }
+  }
+
   renderDashboard();
   renderHistory();
   renderBudgetPage();
 }
 
 // ── Budget ──
-function setBudget() {
+async function setBudget() {
   const val = parseFloat(document.getElementById('budgetInput').value);
   const fb  = document.getElementById('budgetFeedback');
   if (!val || val <= 0) { showFeedback(fb, 'Please enter a valid budget.', 'error'); return; }
   budget = val;
   localStorage.setItem('spendsense_budget', val);
+
+  await checkBackend();
+  if (isBackendOnline) {
+    try {
+      await fetch(`${API_BASE}/api/budget`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ budget: val })
+      });
+    } catch (e) {
+      console.error('Failed to set budget in backend:', e);
+    }
+  }
+
   showFeedback(fb, '✓ Budget set to ₹' + fmt(val), 'success');
   document.getElementById('budgetInput').value = '';
   renderDashboard();
