@@ -1,0 +1,187 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>SpendSense — Smart Expense Tracker</title>
+  <link rel="stylesheet" href="style.css"/>
+  <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Mono:wght@300;400;500&display=swap" rel="stylesheet"/>
+</head>
+<body>
+
+  <!-- Background Grid -->
+  <div class="bg-grid"></div>
+  <div class="bg-glow"></div>
+
+  <!-- Mobile Header -->
+  <header class="mobile-header">
+    <button class="menu-toggle" onclick="toggleSidebar(true)" aria-label="Open menu">☰</button>
+    <div class="mobile-logo">
+      <span class="logo-icon">◈</span>
+      <span class="logo-text">SpendSense</span>
+    </div>
+    <div style="width: 40px;"></div>
+  </header>
+
+  <!-- Sidebar Overlay -->
+  <div class="sidebar-overlay" id="sidebarOverlay" onclick="toggleSidebar(false)"></div>
+
+  <!-- Sidebar -->
+  <aside class="sidebar">
+    <button class="sidebar-close" onclick="toggleSidebar(false)" aria-label="Close menu">✕</button>
+    <div class="logo">
+      <span class="logo-icon">◈</span>
+      <span class="logo-text">SpendSense</span>
+    </div>
+    <nav class="nav">
+      <button class="nav-btn active" data-view="dashboard" onclick="showView('dashboard')">
+        <span class="nav-icon">⬡</span> Dashboard
+      </button>
+      <button class="nav-btn" data-view="add" onclick="showView('add')">
+        <span class="nav-icon">＋</span> Add Expense
+      </button>
+      <button class="nav-btn" data-view="history" onclick="showView('history')">
+        <span class="nav-icon">◷</span> History
+      </button>
+      <button class="nav-btn" data-view="budget" onclick="showView('budget')">
+        <span class="nav-icon">◎</span> Budget
+      </button>
+    </nav>
+    <div class="sidebar-footer">
+      <div class="month-label" id="currentMonth"></div>
+    </div>
+  </aside>
+
+  <!-- Main Content -->
+  <main class="main">
+
+    <!-- DASHBOARD VIEW -->
+    <section id="view-dashboard" class="view active">
+      <div class="page-header">
+        <h1 class="page-title">Overview</h1>
+        <div class="date-badge" id="todayDate"></div>
+      </div>
+
+      <!-- Stats Row -->
+      <div class="stats-grid">
+        <div class="stat-card primary">
+          <div class="stat-label">Total Spent</div>
+          <div class="stat-value" id="totalSpent">₹0</div>
+          <div class="stat-sub" id="spentVsBudget">No budget set</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-label">This Month</div>
+          <div class="stat-value" id="monthCount">0</div>
+          <div class="stat-sub">transactions</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-label">Highest Spend</div>
+          <div class="stat-value" id="highestCat">—</div>
+          <div class="stat-sub">category</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-label">Remaining Budget</div>
+          <div class="stat-value" id="remainingBudget">—</div>
+          <div class="stat-sub" id="budgetStatus">set a budget</div>
+        </div>
+      </div>
+
+      <!-- Budget Bar -->
+      <div class="budget-bar-section" id="budgetBarSection" style="display:none">
+        <div class="section-label">Budget Usage</div>
+        <div class="budget-bar-track">
+          <div class="budget-bar-fill" id="budgetBarFill"></div>
+        </div>
+        <div class="budget-bar-labels">
+          <span id="budgetBarSpent">₹0 spent</span>
+          <span id="budgetBarTotal">of ₹0</span>
+        </div>
+      </div>
+
+      <!-- Category Breakdown -->
+      <div class="section-label">Category Breakdown</div>
+      <div class="category-grid" id="categoryGrid">
+        <div class="empty-state">No expenses yet. Add your first one!</div>
+      </div>
+
+      <!-- Recent Transactions -->
+      <div class="section-label" style="margin-top:2rem">Recent Transactions</div>
+      <div class="transactions-list" id="recentList">
+        <div class="empty-state">Nothing here yet.</div>
+      </div>
+    </section>
+
+    <!-- ADD EXPENSE VIEW -->
+    <section id="view-add" class="view">
+      <div class="page-header">
+        <h1 class="page-title">Add Expense</h1>
+      </div>
+      <div class="form-card">
+        <div class="form-group">
+          <label class="form-label">Description</label>
+          <input type="text" id="expDesc" class="form-input" placeholder="e.g. Lunch at Cafe"/>
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label class="form-label">Amount (₹)</label>
+            <input type="number" id="expAmount" class="form-input" placeholder="0.00" min="0"/>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Date</label>
+            <input type="date" id="expDate" class="form-input"/>
+          </div>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Category</label>
+          <div class="category-picker" id="categoryPicker"></div>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Note (optional)</label>
+          <input type="text" id="expNote" class="form-input" placeholder="Any additional details..."/>
+        </div>
+        <button class="btn-primary" onclick="addExpense()">Record Expense ◈</button>
+        <div class="form-feedback" id="formFeedback"></div>
+      </div>
+    </section>
+
+    <!-- HISTORY VIEW -->
+    <section id="view-history" class="view">
+      <div class="page-header">
+        <h1 class="page-title">History</h1>
+        <div class="header-actions">
+          <select class="filter-select" id="filterCat" onchange="renderHistory()">
+            <option value="">All Categories</option>
+          </select>
+          <button class="btn-danger-sm" onclick="clearAll()">Clear All</button>
+        </div>
+      </div>
+      <div class="transactions-list full" id="historyList">
+        <div class="empty-state">No expenses recorded yet.</div>
+      </div>
+    </section>
+
+    <!-- BUDGET VIEW -->
+    <section id="view-budget" class="view">
+      <div class="page-header">
+        <h1 class="page-title">Budget</h1>
+      </div>
+      <div class="form-card">
+        <div class="form-group">
+          <label class="form-label">Monthly Budget (₹)</label>
+          <input type="number" id="budgetInput" class="form-input" placeholder="e.g. 20000" min="0"/>
+        </div>
+        <button class="btn-primary" onclick="setBudget()">Set Budget ◎</button>
+        <div class="form-feedback" id="budgetFeedback"></div>
+      </div>
+
+      <div class="section-label" style="margin-top:2rem">Category-wise Spending</div>
+      <div class="category-detail-list" id="categoryDetail">
+        <div class="empty-state">No data yet.</div>
+      </div>
+    </section>
+
+  </main>
+
+  <script src="app.js"></script>
+</body>
+</html>
