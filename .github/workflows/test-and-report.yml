@@ -23,7 +23,6 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: 20
-          cache: 'npm'
 
       - name: Install Backend Dependencies
         run: |
@@ -44,8 +43,43 @@ jobs:
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: selenium-test-report
+          name: selenium-report
           path: selenium-tests/selenium_report.xlsx
+
+  backend-api-tests:
+    name: Backend API Tests
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Install Backend Dependencies
+        run: |
+          cd server
+          npm install
+
+      - name: Install Backend Test Suite Dependencies
+        run: |
+          cd backend-tests
+          npm install
+
+      - name: Execute Backend API E2E Suite
+        run: |
+          cd backend-tests
+          node backend-test.js
+
+      - name: Upload Backend Excel Report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: backend-report
+          path: backend-tests/backend_report.xlsx
 
   appium-mobile-dry-run:
     name: Appium Mobile Tests Dry-Run
@@ -59,7 +93,6 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: 20
-          cache: 'npm'
 
       - name: Install Appium Suite Dependencies
         run: |
@@ -70,3 +103,33 @@ jobs:
         run: |
           cd appium-tests
           npm run dry-run
+
+  generate-spendsense-test-report:
+    name: Generate SpendSense Test Report
+    needs: [selenium-web-api-tests, backend-api-tests, appium-mobile-dry-run]
+    runs-on: ubuntu-latest
+    if: always()
+
+    steps:
+      - name: Create Reports Directory structure
+        run: |
+          mkdir -p reports/frontend
+          mkdir -p reports/backend
+
+      - name: Download Selenium Web Report
+        uses: actions/download-artifact@v4
+        with:
+          name: selenium-report
+          path: reports/frontend/
+
+      - name: Download Backend API Report
+        uses: actions/download-artifact@v4
+        with:
+          name: backend-report
+          path: reports/backend/
+
+      - name: Upload Aggregated Reports Folder
+        uses: actions/upload-artifact@v4
+        with:
+          name: spendsense-aggregated-reports
+          path: reports/

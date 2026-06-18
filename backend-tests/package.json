@@ -1,0 +1,12 @@
+{
+  "name": "backend-tests",
+  "version": "1.0.0",
+  "description": "Backend API REST Integration testing suite for SpendSense",
+  "main": "backend-test.js",
+  "scripts": {
+    "test": "node backend-test.js"
+  },
+  "dependencies": {
+    "exceljs": "^4.4.0"
+  }
+}
