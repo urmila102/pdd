@@ -3,7 +3,7 @@ node_modules/
 **/node_modules/
 
 # Local databases
-server/db.json
+backend/db.json
 
 # Local reports
 **/*.xlsx

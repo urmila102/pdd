@@ -14,8 +14,8 @@ let server;
 function startServer() {
   server = http.createServer((req, res) => {
     let urlPath = req.url.split('?')[0];
-    let filePath = path.join(__dirname, '..', urlPath === '/' ? 'index.html' : urlPath);
-    if (!filePath.startsWith(path.join(__dirname, '..'))) { res.writeHead(403); res.end('Denied'); return; }
+    let filePath = path.join(__dirname, '../frontend', urlPath === '/' ? 'index.html' : urlPath);
+    if (!filePath.startsWith(path.join(__dirname, '../frontend'))) { res.writeHead(403); res.end('Denied'); return; }
     const ext = String(path.extname(filePath)).toLowerCase();
     const mime = { '.html':'text/html','.js':'text/javascript','.css':'text/css','.json':'application/json','.png':'image/png','.jpg':'image/jpeg','.svg':'image/svg+xml' };
     fs.readFile(filePath, (err, content) => {
@@ -32,7 +32,7 @@ function stopServer() { if (server) server.close(); }
 let backendProcess;
 function startBackendServer() {
   console.log('[INFO] Starting backend server...');
-  backendProcess = spawn('node', [path.join(__dirname, '../server/server.js')], { stdio: 'inherit' });
+  backendProcess = spawn('node', [path.join(__dirname, '../backend/server.js')], { stdio: 'inherit' });
   backendProcess.on('error', e => console.error('[ERROR]', e));
 }
 function stopBackendServer() { if (backendProcess) backendProcess.kill(); }

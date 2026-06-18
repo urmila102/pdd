@@ -11,7 +11,7 @@ const opts = {
     platformName: 'Android',
     'appium:automationName': 'UiAutomator2',
     'appium:deviceName': 'Android Emulator',
-    'appium:app': path.join(__dirname, '../android/app/build/outputs/apk/debug/app-debug.apk'),
+    'appium:app': path.join(__dirname, '../frontend/android/app/build/outputs/apk/debug/app-debug.apk'),
     'appium:appPackage': 'com.spendsense.app',
     'appium:appActivity': 'com.spendsense.app.MainActivity',
     'appium:ensureWebviewsHavePages': true,

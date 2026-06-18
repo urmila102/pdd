@@ -19,7 +19,7 @@ let serverProcess;
 function startServer() {
   return new Promise((resolve, reject) => {
     console.log('[INFO] Spawning SpendSense backend API server...');
-    serverProcess = spawn('node', [path.join(__dirname, '../server/server.js')], {
+    serverProcess = spawn('node', [path.join(__dirname, '../backend/server.js')], {
       stdio: 'inherit',
       env: { ...process.env, PORT }
     });
@@ -617,12 +617,12 @@ async function runTests() {
         tc.status = 'PASS';
       }
       else if (tc.id === 'TC046') {
-        const fileExists = fs.existsSync(path.join(__dirname, '../server/db.json'));
+        const fileExists = fs.existsSync(path.join(__dirname, '../backend/db.json'));
         tc.actual = `db.json exists: ${fileExists}`;
         if (fileExists) tc.status = 'PASS';
       }
       else if (tc.id === 'TC047') {
-        const raw = fs.readFileSync(path.join(__dirname, '../server/db.json'), 'utf8');
+        const raw = fs.readFileSync(path.join(__dirname, '../backend/db.json'), 'utf8');
         let parsed = false;
         try { JSON.parse(raw); parsed = true; } catch(e) {}
         tc.actual = `Parse result: ${parsed}`;
@@ -745,7 +745,7 @@ async function runTests() {
 
   // Reset db file after runs to clean workspace
   try {
-    fs.writeFileSync(path.join(__dirname, '../server/db.json'), JSON.stringify({ expenses: [], budget: 0 }, null, 2), 'utf8');
+    fs.writeFileSync(path.join(__dirname, '../backend/db.json'), JSON.stringify({ expenses: [], budget: 0 }, null, 2), 'utf8');
   } catch(e) {}
 
   await compileExcelReport();

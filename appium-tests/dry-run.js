@@ -72,7 +72,7 @@ if (content.includes('webdriverio') && content.includes('appium:appPackage')) {
 }
 
 // ── Step 3: Check APK presence ──
-const apkPath = path.join(__dirname, '../android/app/build/outputs/apk/debug/app-debug.apk');
+const apkPath = path.join(__dirname, '../frontend/android/app/build/outputs/apk/debug/app-debug.apk');
 if (fs.existsSync(apkPath)) {
   console.log(`[PASS] ✅ Compiled Android APK found at: ${apkPath}`);
 } else {

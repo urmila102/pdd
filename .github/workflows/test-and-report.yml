@@ -43,7 +43,7 @@ jobs:
 
       - name: 📦 Install Backend Server Dependencies
         run: |
-          cd server
+          cd backend
           npm install
 
       - name: 📦 Install Selenium Suite Dependencies
@@ -92,7 +92,7 @@ jobs:
 
       - name: 📦 Install Backend Server Dependencies
         run: |
-          cd server
+          cd backend
           npm install
 
       - name: 📦 Install Backend Test Suite Dependencies
