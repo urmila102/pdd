@@ -5,15 +5,28 @@ const db = require('./database');
 const app = express();
 const PORT = process.env.PORT || 5000;
 
-// Enable CORS and JSON body parser
+// Enable CORS and JSON body parser (increase limit for boundary tests)
 app.use(cors());
-app.use(express.json());
+app.use(express.json({ limit: '10mb' }));
 
 // Logging middleware
 app.use((req, res, next) => {
   console.log(`[${new Date().toISOString()}] ${req.method} ${req.url}`);
   next();
 });
+
+// ── Helper: is a valid positive number ──
+function isValidPositiveNumber(val) {
+  if (val === undefined || val === null || val === '') return false;
+  const n = Number(val);
+  return !isNaN(n) && isFinite(n) && n >= 0;
+}
+
+function isValidAmount(val) {
+  if (val === undefined || val === null || val === '') return false;
+  const n = Number(val);
+  return !isNaN(n) && isFinite(n) && n > 0;
+}
 
 // --- API ROUTES ---
 
@@ -30,15 +43,25 @@ app.get('/api/expenses', async (req, res) => {
 // POST: Add new expense
 app.post('/api/expenses', async (req, res) => {
   try {
-    const { desc, amount, date, category, note } = req.body;
-    
-    if (!desc || !amount || !date || !category) {
-      return res.status(400).json({ error: 'Missing required fields (desc, amount, date, category)' });
+    const { desc, amount, date, category, note } = req.body || {};
+
+    // Validate required fields
+    if (!desc || typeof desc !== 'string' || desc.trim() === '') {
+      return res.status(400).json({ error: 'Missing or invalid desc field' });
+    }
+    if (!isValidAmount(amount)) {
+      return res.status(400).json({ error: 'Missing or invalid amount (must be a positive number)' });
+    }
+    if (!date || typeof date !== 'string') {
+      return res.status(400).json({ error: 'Missing or invalid date field' });
+    }
+    if (!category || typeof category !== 'string') {
+      return res.status(400).json({ error: 'Missing or invalid category field' });
     }
 
     const newExpense = {
-      id: Date.now(), // Generate unique ID
-      desc,
+      id: Date.now(),
+      desc: desc.trim(),
       amount: parseFloat(amount),
       date,
       category,
@@ -52,7 +75,7 @@ app.post('/api/expenses', async (req, res) => {
   }
 });
 
-// DELETE: Delete a single expense
+// DELETE: Delete a single expense by ID
 app.delete('/api/expenses/:id', async (req, res) => {
   try {
     const success = await db.deleteExpense(req.params.id);
@@ -89,12 +112,14 @@ app.get('/api/budget', async (req, res) => {
 // POST: Set monthly budget
 app.post('/api/budget', async (req, res) => {
   try {
-    const { budget } = req.body;
-    if (budget === undefined || parseFloat(budget) < 0) {
-      return res.status(400).json({ error: 'Invalid or missing budget value' });
+    const { budget } = req.body || {};
+
+    // Strict validation: must be a non-negative number
+    if (!isValidPositiveNumber(budget)) {
+      return res.status(400).json({ error: 'Invalid or missing budget value (must be a non-negative number)' });
     }
 
-    const setVal = await db.setBudget(budget);
+    const setVal = await db.setBudget(parseFloat(budget));
     res.json({ success: true, budget: setVal });
   } catch (error) {
     res.status(500).json({ error: 'Failed to configure budget' });
@@ -114,6 +139,11 @@ app.post('/api/reset', async (req, res) => {
 // Default Root endpoint
 app.get('/', (req, res) => {
   res.json({ message: 'SpendSense API is online' });
+});
+
+// 404 handler for undefined routes
+app.use((req, res) => {
+  res.status(404).json({ error: `Route not found: ${req.method} ${req.url}` });
 });
 
 // Start Server

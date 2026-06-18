@@ -1,4 +1,4 @@
-name: SpendSense E2E Testing & Reports CI
+name: 🚀 SpendSense — Full E2E Test Suite & Reports
 
 on:
   push:
@@ -9,127 +9,258 @@ on:
     branches:
       - main
       - master
+  workflow_dispatch:
+    inputs:
+      reason:
+        description: 'Reason for manual trigger'
+        required: false
+        default: 'Manual test run'
+
+# Cancel in-progress runs for the same ref
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
 
 jobs:
-  selenium-web-api-tests:
-    name: Selenium E2E Web + API Tests
+  # ─────────────────────────────────────────
+  #  JOB 1: Frontend Selenium E2E Tests
+  # ─────────────────────────────────────────
+  frontend-selenium-tests:
+    name: 🌐 Frontend — Selenium E2E (100 Tests)
     runs-on: ubuntu-latest
+    timeout-minutes: 20
 
     steps:
-      - name: Checkout Repository
+      - name: 📥 Checkout Repository
         uses: actions/checkout@v4
 
-      - name: Setup Node.js
+      - name: ⚙️ Setup Node.js 20
         uses: actions/setup-node@v4
         with:
           node-version: 20
+          cache: 'npm'
+          cache-dependency-path: selenium-tests/package-lock.json
 
-      - name: Install Backend Dependencies
+      - name: 📦 Install Backend Server Dependencies
         run: |
           cd server
           npm install
 
-      - name: Install Selenium Suite Dependencies
+      - name: 📦 Install Selenium Suite Dependencies
         run: |
           cd selenium-tests
           npm install
 
-      - name: Execute E2E Web & API Suite
+      - name: 🌐 Install Google Chrome (Stable)
+        uses: browser-actions/setup-chrome@v1
+        with:
+          chrome-version: stable
+
+      - name: 🧪 Execute Selenium Web E2E Test Suite (100 cases)
         run: |
           cd selenium-tests
           node selenium-test.js
+        env:
+          DISPLAY: ':99'
 
-      - name: Upload Selenium Excel Report
+      - name: 📊 Upload Frontend Excel Report
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: selenium-report
+          name: frontend-selenium-report
           path: selenium-tests/selenium_report.xlsx
+          retention-days: 30
 
+  # ─────────────────────────────────────────
+  #  JOB 2: Backend API E2E Tests
+  # ─────────────────────────────────────────
   backend-api-tests:
-    name: Backend API Tests
+    name: ⚙️ Backend — API E2E Tests (100 Tests)
     runs-on: ubuntu-latest
+    timeout-minutes: 15
 
     steps:
-      - name: Checkout Repository
+      - name: 📥 Checkout Repository
         uses: actions/checkout@v4
 
-      - name: Setup Node.js
+      - name: ⚙️ Setup Node.js 20
         uses: actions/setup-node@v4
         with:
           node-version: 20
+          cache: 'npm'
+          cache-dependency-path: backend-tests/package-lock.json
 
-      - name: Install Backend Dependencies
+      - name: 📦 Install Backend Server Dependencies
         run: |
           cd server
           npm install
 
-      - name: Install Backend Test Suite Dependencies
+      - name: 📦 Install Backend Test Suite Dependencies
         run: |
           cd backend-tests
           npm install
 
-      - name: Execute Backend API E2E Suite
+      - name: ⚙️ Execute Backend API E2E Test Suite (100 cases)
         run: |
           cd backend-tests
           node backend-test.js
 
-      - name: Upload Backend Excel Report
+      - name: 📊 Upload Backend Excel Report
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: backend-report
+          name: backend-api-report
           path: backend-tests/backend_report.xlsx
+          retention-days: 30
 
-  appium-mobile-dry-run:
-    name: Appium Mobile Tests Dry-Run
+  # ─────────────────────────────────────────
+  #  JOB 3: Appium Mobile Dry-Run + Report
+  # ─────────────────────────────────────────
+  appium-mobile-dryrun:
+    name: 📱 Mobile — Appium Dry-Run (100 Tests)
     runs-on: ubuntu-latest
+    timeout-minutes: 10
 
     steps:
-      - name: Checkout Repository
+      - name: 📥 Checkout Repository
         uses: actions/checkout@v4
 
-      - name: Setup Node.js
+      - name: ⚙️ Setup Node.js 20
         uses: actions/setup-node@v4
         with:
           node-version: 20
+          cache: 'npm'
+          cache-dependency-path: appium-tests/package-lock.json
 
-      - name: Install Appium Suite Dependencies
+      - name: 📦 Install Appium Suite Dependencies
         run: |
           cd appium-tests
           npm install
 
-      - name: Execute Appium Verification Dry-Run
+      - name: 📱 Execute Appium Mobile Dry-Run Suite (100 cases)
         run: |
           cd appium-tests
-          npm run dry-run
+          node dry-run.js
 
-  generate-spendsense-test-report:
-    name: Generate SpendSense Test Report
-    needs: [selenium-web-api-tests, backend-api-tests, appium-mobile-dry-run]
+      - name: 📊 Upload Appium Dry-Run Excel Report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: appium-dryrun-report
+          path: appium-tests/appium_dryrun_report.xlsx
+          retention-days: 30
+
+  # ─────────────────────────────────────────
+  #  JOB 4: Aggregate Reports + Summary
+  # ─────────────────────────────────────────
+  aggregate-test-reports:
+    name: 📈 Aggregate All Test Reports
+    needs:
+      - frontend-selenium-tests
+      - backend-api-tests
+      - appium-mobile-dryrun
     runs-on: ubuntu-latest
     if: always()
+    timeout-minutes: 10
 
     steps:
-      - name: Create Reports Directory structure
+      - name: 📥 Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: 📁 Create Report Directory Structure
         run: |
           mkdir -p reports/frontend
           mkdir -p reports/backend
+          mkdir -p reports/mobile
 
-      - name: Download Selenium Web Report
+      - name: 📥 Download Frontend Selenium Report
         uses: actions/download-artifact@v4
         with:
-          name: selenium-report
+          name: frontend-selenium-report
           path: reports/frontend/
+        continue-on-error: true
 
-      - name: Download Backend API Report
+      - name: 📥 Download Backend API Report
         uses: actions/download-artifact@v4
         with:
-          name: backend-report
+          name: backend-api-report
           path: reports/backend/
+        continue-on-error: true
 
-      - name: Upload Aggregated Reports Folder
+      - name: 📥 Download Appium Dry-Run Report
+        uses: actions/download-artifact@v4
+        with:
+          name: appium-dryrun-report
+          path: reports/mobile/
+        continue-on-error: true
+
+      - name: 📝 Generate Aggregated Summary Report
+        run: |
+          node -e "
+          const fs = require('fs');
+
+          const frontendPass = '${{ needs.frontend-selenium-tests.result }}' === 'success' ? '✅ PASS' : '❌ FAIL';
+          const backendPass  = '${{ needs.backend-api-tests.result }}' === 'success' ? '✅ PASS' : '❌ FAIL';
+          const mobilePass   = '${{ needs.appium-mobile-dryrun.result }}' === 'success' ? '✅ PASS' : '❌ FAIL';
+
+          const allPassed = frontendPass.includes('PASS') && backendPass.includes('PASS') && mobilePass.includes('PASS');
+          const banner = allPassed ? '✅' : '⚠️';
+
+          let md = '';
+          md += '# ' + banner + ' SpendSense — Complete Test Suite Summary\n\n';
+          md += '> **Project**: SpendSense Expense Tracker | **Ref**: \`${{ github.ref_name }}\` | **Commit**: \`${{ github.sha }}\`\n\n';
+          md += '---\n\n';
+          md += '## 🗂️ Test Jobs Overview\n\n';
+          md += '| Job | Suite | Tests | Technology | Status |\n';
+          md += '|-----|-------|-------|------------|--------|\n';
+          md += '| 🌐 Frontend Selenium | Web E2E | **100** | Selenium WebDriver (Chrome) | ' + frontendPass + ' |\n';
+          md += '| ⚙️ Backend API | REST API E2E | **100** | Node.js HTTP Client | ' + backendPass + ' |\n';
+          md += '| 📱 Appium Mobile | Mobile Dry-Run | **100** | WebdriverIO + Appium | ' + mobilePass + ' |\n';
+          md += '\n**Total Test Cases: 300**\n\n';
+          md += '---\n\n';
+          md += '## 📦 Test Category Coverage\n\n';
+          md += '| Category | Frontend | Backend | Mobile |\n';
+          md += '|----------|----------|---------|--------|\n';
+          md += '| Functional Testing | 40 tests | 40 tests | 40 tests |\n';
+          md += '| UI/UX Testing | 30 tests | — | 30 tests |\n';
+          md += '| Data Integrity & CORS | — | 30 tests | — |\n';
+          md += '| Performance & Security | 30 tests | 30 tests | 30 tests |\n';
+          md += '\n---\n\n';
+          md += '## 📥 Download Reports\n\n';
+          md += '> Excel reports are attached as artifacts to this workflow run.\n\n';
+          md += '| Report | File | Location |\n';
+          md += '|--------|------|----------|\n';
+          md += '| 🌐 Frontend Selenium | \`selenium_report.xlsx\` | Artifact: \`frontend-selenium-report\` |\n';
+          md += '| ⚙️ Backend API | \`backend_report.xlsx\` | Artifact: \`backend-api-report\` |\n';
+          md += '| 📱 Appium Mobile | \`appium_dryrun_report.xlsx\` | Artifact: \`appium-dryrun-report\` |\n';
+          md += '| 📈 All Reports | aggregated folder | Artifact: \`spendsense-all-reports\` |\n';
+          md += '\n---\n\n';
+          md += '## ℹ️ Notes\n\n';
+          md += '- **Frontend tests** run headless Chrome via Selenium WebDriver\n';
+          md += '- **Backend tests** spin up the Express server and test all REST endpoints\n';
+          md += '- **Appium mobile tests** run as dry-run in CI (live device required for full execution)\n';
+          md += '- All Excel reports include color-coded PASS/FAIL status, latency metrics, and category breakdowns\n';
+
+          // Write to GITHUB_STEP_SUMMARY
+          const summaryPath = process.env.GITHUB_STEP_SUMMARY;
+          if (summaryPath) {
+            fs.writeFileSync(summaryPath, md, { flag: 'a' });
+            console.log('[SUCCESS] Aggregated step summary written to GitHub Actions.');
+          }
+
+          // Also save locally
+          fs.writeFileSync('reports/SUMMARY.md', md);
+          console.log('[SUCCESS] Summary written to reports/SUMMARY.md');
+          "
+
+      - name: 🗂️ List All Downloaded Reports
+        run: |
+          echo "=== Reports Directory Structure ==="
+          find reports/ -type f | sort
+
+      - name: 📦 Upload Aggregated Reports Bundle
         uses: actions/upload-artifact@v4
         with:
-          name: spendsense-aggregated-reports
+          name: spendsense-all-reports
           path: reports/
+          retention-days: 30
