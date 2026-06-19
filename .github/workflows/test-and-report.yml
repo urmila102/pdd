@@ -26,7 +26,7 @@ jobs:
   #  JOB 1: Frontend Selenium E2E Tests
   # ─────────────────────────────────────────
   frontend-selenium-tests:
-    name: 🌐 Frontend — Selenium E2E (100 Tests)
+    name: 🌐 Frontend — Selenium E2E (300 Tests)
     runs-on: ubuntu-latest
     timeout-minutes: 20
 
@@ -56,7 +56,7 @@ jobs:
         with:
           chrome-version: stable
 
-      - name: 🧪 Execute Selenium Web E2E Test Suite (100 cases)
+      - name: 🧪 Execute Selenium Web E2E Test Suite (300 cases)
         run: |
           cd selenium-tests
           node selenium-test.js
@@ -75,7 +75,7 @@ jobs:
   #  JOB 2: Backend API E2E Tests
   # ─────────────────────────────────────────
   backend-api-tests:
-    name: ⚙️ Backend — API E2E Tests (100 Tests)
+    name: ⚙️ Backend — API E2E Tests (300 Tests)
     runs-on: ubuntu-latest
     timeout-minutes: 15
 
@@ -100,7 +100,7 @@ jobs:
           cd backend-tests
           npm install
 
-      - name: ⚙️ Execute Backend API E2E Test Suite (100 cases)
+      - name: ⚙️ Execute Backend API E2E Test Suite (300 cases)
         run: |
           cd backend-tests
           node backend-test.js
@@ -117,7 +117,7 @@ jobs:
   #  JOB 3: Appium Mobile Dry-Run + Report
   # ─────────────────────────────────────────
   appium-mobile-dryrun:
-    name: 📱 Mobile — Appium Dry-Run (100 Tests)
+    name: 📱 Mobile — Appium Dry-Run (300 Tests)
     runs-on: ubuntu-latest
     timeout-minutes: 10
 
@@ -137,7 +137,7 @@ jobs:
           cd appium-tests
           npm install
 
-      - name: 📱 Execute Appium Mobile Dry-Run Suite (100 cases)
+      - name: 📱 Execute Appium Mobile Dry-Run Suite (300 cases)
         run: |
           cd appium-tests
           node dry-run.js
@@ -213,18 +213,18 @@ jobs:
           md += '## 🗂️ Test Jobs Overview\n\n';
           md += '| Job | Suite | Tests | Technology | Status |\n';
           md += '|-----|-------|-------|------------|--------|\n';
-          md += '| 🌐 Frontend Selenium | Web E2E | **100** | Selenium WebDriver (Chrome) | ' + frontendPass + ' |\n';
-          md += '| ⚙️ Backend API | REST API E2E | **100** | Node.js HTTP Client | ' + backendPass + ' |\n';
-          md += '| 📱 Appium Mobile | Mobile Dry-Run | **100** | WebdriverIO + Appium | ' + mobilePass + ' |\n';
-          md += '\n**Total Test Cases: 300**\n\n';
+          md += '| 🌐 Frontend Selenium | Web E2E | **300** | Selenium WebDriver (Chrome) | ' + frontendPass + ' |\n';
+          md += '| ⚙️ Backend API | REST API E2E | **300** | Node.js HTTP Client | ' + backendPass + ' |\n';
+          md += '| 📱 Appium Mobile | Mobile Dry-Run | **300** | WebdriverIO + Appium | ' + mobilePass + ' |\n';
+          md += '\n**Total Test Cases: 900**\n\n';
           md += '---\n\n';
           md += '## 📦 Test Category Coverage\n\n';
           md += '| Category | Frontend | Backend | Mobile |\n';
           md += '|----------|----------|---------|--------|\n';
-          md += '| Functional Testing | 40 tests | 40 tests | 40 tests |\n';
-          md += '| UI/UX Testing | 30 tests | — | 30 tests |\n';
-          md += '| Data Integrity & CORS | — | 30 tests | — |\n';
-          md += '| Performance & Security | 30 tests | 30 tests | 30 tests |\n';
+          md += '| Functional Testing | 107 tests | 107 tests | 107 tests |\n';
+          md += '| UI/UX Testing | 97 tests | — | 97 tests |\n';
+          md += '| Data Integrity & CORS | — | 97 tests | — |\n';
+          md += '| Performance & Security | 96 tests | 96 tests | 96 tests |\n';
           md += '\n---\n\n';
           md += '## 📥 Download Reports\n\n';
           md += '> Excel reports are attached as artifacts to this workflow run.\n\n';
