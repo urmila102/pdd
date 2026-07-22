@@ -25,8 +25,6 @@ env:
 
 permissions:
   contents: read
-  pages: write
-  id-token: write
 
 jobs:
   # ─────────────────────────────────────────
@@ -200,10 +198,10 @@ jobs:
           retention-days: 90
 
   # ─────────────────────────────────────────
-  #  JOB 5: Deploy to GitHub Pages & Aggregate
+  #  JOB 5: Aggregate All Test Reports & Summary
   # ─────────────────────────────────────────
-  deploy-github-pages:
-    name: 🚀 Deploy to GitHub Pages
+  aggregate-all-reports:
+    name: 📈 Aggregate All Test Reports
     needs:
       - web-e2e-tests
       - mobile-e2e-tests
@@ -212,9 +210,6 @@ jobs:
     runs-on: ubuntu-latest
     if: always()
     timeout-minutes: 10
-    environment:
-      name: github-pages
-      url: ${{ steps.deployment.outputs.page_url }}
 
     steps:
       - name: 📥 Checkout Repository
@@ -269,7 +264,7 @@ jobs:
           const banner = allPassed ? '✅' : '⚠️';
 
           let md = '';
-          md += '# ' + banner + ' SpendSense — Complete Test Suite & Deployment Summary\n\n';
+          md += '# ' + banner + ' SpendSense — Complete Test Suite Summary\n\n';
           md += '> **Project**: SpendSense Expense Tracker | **Ref**: \`${{ github.ref_name }}\` | **Commit**: \`${{ github.sha }}\`\n\n';
           md += '---\n\n';
           md += '## 🗂️ Test Jobs Overview\n\n';
@@ -326,20 +321,3 @@ jobs:
           name: spendsense-all-reports
           path: reports/
           retention-days: 90
-
-      - name: 🌐 Setup GitHub Pages
-        uses: actions/configure-pages@v5
-        with:
-          enablement: true
-        continue-on-error: true
-
-      - name: 📦 Upload Pages Artifact
-        uses: actions/upload-pages-artifact@v3
-        with:
-          path: reports/
-        continue-on-error: true
-
-      - name: 🚀 Deploy to GitHub Pages
-        id: deployment
-        uses: actions/deploy-pages@v4
-        continue-on-error: true
