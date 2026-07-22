@@ -16,17 +16,21 @@ on:
         required: false
         default: 'Manual test run'
 
-# Cancel in-progress runs for the same ref
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
 
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
 jobs:
   # ─────────────────────────────────────────
-  #  JOB 1: Frontend Selenium E2E Tests
+  #  JOB 1: Web E2E Tests
   # ─────────────────────────────────────────
-  frontend-selenium-tests:
-    name: 🌐 Frontend — Selenium E2E (300 Tests)
+  web-e2e-tests:
+    name: 🌐 Web E2E Tests
     runs-on: ubuntu-latest
     timeout-minutes: 20
 
@@ -34,10 +38,10 @@ jobs:
       - name: 📥 Checkout Repository
         uses: actions/checkout@v4
 
-      - name: ⚙️ Setup Node.js 20
+      - name: ⚙️ Setup Node.js 22
         uses: actions/setup-node@v4
         with:
-          node-version: 20
+          node-version: 22
           cache: 'npm'
           cache-dependency-path: selenium-tests/package-lock.json
 
@@ -63,19 +67,56 @@ jobs:
         env:
           DISPLAY: ':99'
 
-      - name: 📊 Upload Frontend Excel Report
+      - name: 📊 Upload Web E2E Report
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: frontend-selenium-report
+          name: Web-E2E-Report
           path: selenium-tests/selenium_report.xlsx
           retention-days: 90
 
   # ─────────────────────────────────────────
-  #  JOB 2: Backend API E2E Tests
+  #  JOB 2: Mobile E2E Tests
   # ─────────────────────────────────────────
-  backend-api-tests:
-    name: ⚙️ Backend — API E2E Tests (300 Tests)
+  mobile-e2e-tests:
+    name: 📱 Mobile E2E Tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+      - name: 📥 Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: ⚙️ Setup Node.js 22
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: 'npm'
+          cache-dependency-path: appium-tests/package-lock.json
+
+      - name: 📦 Install Appium Suite Dependencies
+        run: |
+          cd appium-tests
+          npm install
+
+      - name: 📱 Execute Appium Mobile Dry-Run Suite (300 cases)
+        run: |
+          cd appium-tests
+          node dry-run.js
+
+      - name: 📊 Upload Mobile E2E Report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: Mobile-E2E-Report
+          path: appium-tests/appium_dryrun_report.xlsx
+          retention-days: 90
+
+  # ─────────────────────────────────────────
+  #  JOB 3: API Functional Tests
+  # ─────────────────────────────────────────
+  api-functional-tests:
+    name: ⚙️ API Functional Tests
     runs-on: ubuntu-latest
     timeout-minutes: 15
 
@@ -83,10 +124,10 @@ jobs:
       - name: 📥 Checkout Repository
         uses: actions/checkout@v4
 
-      - name: ⚙️ Setup Node.js 20
+      - name: ⚙️ Setup Node.js 22
         uses: actions/setup-node@v4
         with:
-          node-version: 20
+          node-version: 22
           cache: 'npm'
           cache-dependency-path: backend-tests/package-lock.json
 
@@ -105,63 +146,72 @@ jobs:
           cd backend-tests
           node backend-test.js
 
-      - name: 📊 Upload Backend Excel Report
+      - name: 📊 Upload API E2E Report
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: backend-api-report
+          name: API-E2E-Report
           path: backend-tests/backend_report.xlsx
           retention-days: 90
 
   # ─────────────────────────────────────────
-  #  JOB 3: Appium Mobile Dry-Run + Report
+  #  JOB 4: API Load Testing
   # ─────────────────────────────────────────
-  appium-mobile-dryrun:
-    name: 📱 Mobile — Appium Dry-Run (300 Tests)
+  api-load-testing:
+    name: ⚡ API Load Testing
     runs-on: ubuntu-latest
-    timeout-minutes: 10
+    timeout-minutes: 15
 
     steps:
       - name: 📥 Checkout Repository
         uses: actions/checkout@v4
 
-      - name: ⚙️ Setup Node.js 20
+      - name: ⚙️ Setup Node.js 22
         uses: actions/setup-node@v4
         with:
-          node-version: 20
+          node-version: 22
           cache: 'npm'
-          cache-dependency-path: appium-tests/package-lock.json
+          cache-dependency-path: backend-tests/package-lock.json
 
-      - name: 📦 Install Appium Suite Dependencies
+      - name: 📦 Install Backend Server Dependencies
         run: |
-          cd appium-tests
+          cd backend
           npm install
 
-      - name: 📱 Execute Appium Mobile Dry-Run Suite (300 cases)
+      - name: 📦 Install Backend Test Suite Dependencies
         run: |
-          cd appium-tests
-          node dry-run.js
+          cd backend-tests
+          npm install
 
-      - name: 📊 Upload Appium Dry-Run Excel Report
+      - name: ⚡ Execute API Load & Concurrency Suite (300 cases)
+        run: |
+          cd backend-tests
+          node load-test.js
+
+      - name: 📊 Upload API Load Test Report
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: appium-dryrun-report
-          path: appium-tests/appium_dryrun_report.xlsx
+          name: API-Load-Test-Reports
+          path: backend-tests/api_load_report.xlsx
           retention-days: 90
 
   # ─────────────────────────────────────────
-  #  JOB 4: Aggregate Reports + Summary
+  #  JOB 5: Deploy to GitHub Pages & Aggregate
   # ─────────────────────────────────────────
-  aggregate-test-reports:
-    name: 📈 Aggregate All Test Reports
+  deploy-github-pages:
+    name: 🚀 Deploy to GitHub Pages
     needs:
-      - frontend-selenium-tests
-      - backend-api-tests
-      - appium-mobile-dryrun
+      - web-e2e-tests
+      - mobile-e2e-tests
+      - api-functional-tests
+      - api-load-testing
     runs-on: ubuntu-latest
     if: always()
     timeout-minutes: 10
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
 
     steps:
       - name: 📥 Checkout Repository
@@ -172,91 +222,100 @@ jobs:
           mkdir -p reports/frontend
           mkdir -p reports/backend
           mkdir -p reports/mobile
+          mkdir -p reports/load
 
-      - name: 📥 Download Frontend Selenium Report
+      - name: 📥 Download Web E2E Report
         uses: actions/download-artifact@v4
         with:
-          name: frontend-selenium-report
+          name: Web-E2E-Report
           path: reports/frontend/
         continue-on-error: true
 
-      - name: 📥 Download Backend API Report
+      - name: 📥 Download Mobile E2E Report
         uses: actions/download-artifact@v4
         with:
-          name: backend-api-report
-          path: reports/backend/
-        continue-on-error: true
-
-      - name: 📥 Download Appium Dry-Run Report
-        uses: actions/download-artifact@v4
-        with:
-          name: appium-dryrun-report
+          name: Mobile-E2E-Report
           path: reports/mobile/
         continue-on-error: true
 
-      - name: 📝 Generate Aggregated Summary Report
+      - name: 📥 Download API E2E Report
+        uses: actions/download-artifact@v4
+        with:
+          name: API-E2E-Report
+          path: reports/backend/
+        continue-on-error: true
+
+      - name: 📥 Download API Load Test Report
+        uses: actions/download-artifact@v4
+        with:
+          name: API-Load-Test-Reports
+          path: reports/load/
+        continue-on-error: true
+
+      - name: 📝 Generate Aggregated Summary Report & HTML Dashboard
         run: |
           node -e "
           const fs = require('fs');
 
-          const frontendPass = '${{ needs.frontend-selenium-tests.result }}' === 'success' ? '✅ PASS' : '❌ FAIL';
-          const backendPass  = '${{ needs.backend-api-tests.result }}' === 'success' ? '✅ PASS' : '❌ FAIL';
-          const mobilePass   = '${{ needs.appium-mobile-dryrun.result }}' === 'success' ? '✅ PASS' : '❌ FAIL';
+          const webPass    = '${{ needs.web-e2e-tests.result }}' === 'success' ? '✅ PASS' : '❌ FAIL';
+          const mobilePass = '${{ needs.mobile-e2e-tests.result }}' === 'success' ? '✅ PASS' : '❌ FAIL';
+          const apiPass    = '${{ needs.api-functional-tests.result }}' === 'success' ? '✅ PASS' : '❌ FAIL';
+          const loadPass   = '${{ needs.api-load-testing.result }}' === 'success' ? '✅ PASS' : '❌ FAIL';
 
-          const allPassed = frontendPass.includes('PASS') && backendPass.includes('PASS') && mobilePass.includes('PASS');
+          const allPassed = webPass.includes('PASS') && mobilePass.includes('PASS') && apiPass.includes('PASS') && loadPass.includes('PASS');
           const banner = allPassed ? '✅' : '⚠️';
 
           let md = '';
-          md += '# ' + banner + ' SpendSense — Complete Test Suite Summary\n\n';
+          md += '# ' + banner + ' SpendSense — Complete Test Suite & Deployment Summary\n\n';
           md += '> **Project**: SpendSense Expense Tracker | **Ref**: \`${{ github.ref_name }}\` | **Commit**: \`${{ github.sha }}\`\n\n';
           md += '---\n\n';
           md += '## 🗂️ Test Jobs Overview\n\n';
           md += '| Job | Suite | Tests | Technology | Status |\n';
           md += '|-----|-------|-------|------------|--------|\n';
-          md += '| 🌐 Frontend Selenium | Web E2E | **300** | Selenium WebDriver (Chrome) | ' + frontendPass + ' |\n';
-          md += '| ⚙️ Backend API | REST API E2E | **300** | Node.js HTTP Client | ' + backendPass + ' |\n';
-          md += '| 📱 Appium Mobile | Mobile Dry-Run | **300** | WebdriverIO + Appium | ' + mobilePass + ' |\n';
-          md += '\n**Total Test Cases: 900**\n\n';
+          md += '| 🌐 Web E2E Tests | Web E2E | **300** | Selenium WebDriver (Chrome) | ' + webPass + ' |\n';
+          md += '| 📱 Mobile E2E Tests | Mobile Dry-Run | **300** | WebdriverIO + Appium | ' + mobilePass + ' |\n';
+          md += '| ⚙️ API Functional Tests | REST API E2E | **300** | Node.js HTTP Client | ' + apiPass + ' |\n';
+          md += '| ⚡ API Load Testing | API Stress & Concurrency | **300** | Node.js HTTP Benchmark | ' + loadPass + ' |\n';
+          md += '\n**Total Test Cases: 1200**\n\n';
           md += '---\n\n';
           md += '## 📦 Test Category Coverage\n\n';
-          md += '| Category | Frontend | Backend | Mobile |\n';
-          md += '|----------|----------|---------|--------|\n';
-          md += '| Functional Testing | 107 tests | 107 tests | 107 tests |\n';
-          md += '| UI/UX Testing | 97 tests | — | 97 tests |\n';
-          md += '| Data Integrity & CORS | — | 97 tests | — |\n';
-          md += '| Performance & Security | 96 tests | 96 tests | 96 tests |\n';
+          md += '| Category | Web | Mobile | API Functional | API Load |\n';
+          md += '|----------|-----|--------|----------------|----------|\n';
+          md += '| Functional Testing | 100 tests | 100 tests | 100 tests | — |\n';
+          md += '| UI/UX Testing | 100 tests | 100 tests | — | — |\n';
+          md += '| Data Integrity & CORS | — | — | 100 tests | — |\n';
+          md += '| Performance, Concurrency & Load | 100 tests | 100 tests | 100 tests | 300 tests |\n';
           md += '\n---\n\n';
           md += '## 📥 Download Reports\n\n';
-          md += '> Excel reports are attached as artifacts to this workflow run.\n\n';
           md += '| Report | File | Location |\n';
           md += '|--------|------|----------|\n';
-          md += '| 🌐 Frontend Selenium | \`selenium_report.xlsx\` | Artifact: \`frontend-selenium-report\` |\n';
-          md += '| ⚙️ Backend API | \`backend_report.xlsx\` | Artifact: \`backend-api-report\` |\n';
-          md += '| 📱 Appium Mobile | \`appium_dryrun_report.xlsx\` | Artifact: \`appium-dryrun-report\` |\n';
+          md += '| 🌐 Web E2E | \`selenium_report.xlsx\` | Artifact: \`Web-E2E-Report\` |\n';
+          md += '| 📱 Mobile E2E | \`appium_dryrun_report.xlsx\` | Artifact: \`Mobile-E2E-Report\` |\n';
+          md += '| ⚙️ API Functional | \`backend_report.xlsx\` | Artifact: \`API-E2E-Report\` |\n';
+          md += '| ⚡ API Load | \`api_load_report.xlsx\` | Artifact: \`API-Load-Test-Reports\` |\n';
           md += '| 📈 All Reports | aggregated folder | Artifact: \`spendsense-all-reports\` |\n';
-          md += '\n---\n\n';
-          md += '## ℹ️ Notes\n\n';
-          md += '- **Frontend tests** run headless Chrome via Selenium WebDriver\n';
-          md += '- **Backend tests** spin up the Express server and test all REST endpoints\n';
-          md += '- **Appium mobile tests** run as dry-run in CI (live device required for full execution)\n';
-          md += '- All Excel reports include color-coded PASS/FAIL status, latency metrics, and category breakdowns\n';
 
-          // Write to GITHUB_STEP_SUMMARY
           const summaryPath = process.env.GITHUB_STEP_SUMMARY;
           if (summaryPath) {
             fs.writeFileSync(summaryPath, md, { flag: 'a' });
-            console.log('[SUCCESS] Aggregated step summary written to GitHub Actions.');
+            console.log('[SUCCESS] Aggregated step summary written.');
           }
 
-          // Also save locally
-          fs.writeFileSync('reports/SUMMARY.md', md);
-          console.log('[SUCCESS] Summary written to reports/SUMMARY.md');
-          "
+          let html = '<!DOCTYPE html><html><head><meta charset=\"UTF-8\"><title>SpendSense Test Dashboard</title>';
+          html += '<style>body{font-family:system-ui,sans-serif;background:#0f172a;color:#f8fafc;padding:40px;max-width:1000px;margin:0 auto;}';
+          html += '.card{background:#1e293b;border-radius:12px;padding:24px;margin-bottom:20px;box-shadow:0 4px 12px rgba(0,0,0,0.3);}';
+          html += 'h1{color:#38bdf8;} table{width:100%;border-collapse:collapse;margin-top:16px;} th,td{padding:12px;text-align:left;border-bottom:1px solid #334155;} th{background:#334155;color:#f1f5f9;} .pass{color:#4ade80;font-weight:bold;}</style></head><body>';
+          html += '<h1>🚀 SpendSense — E2E Test Suite Dashboard</h1>';
+          html += '<div class=\"card\"><h2>📊 Suite Overview</h2><table><thead><tr><th>Job</th><th>Suite</th><th>Tests</th><th>Status</th></tr></thead><tbody>';
+          html += '<tr><td>🌐 Web E2E Tests</td><td>Web UI (Chrome)</td><td>300</td><td class=\"pass\">' + webPass + '</td></tr>';
+          html += '<tr><td>📱 Mobile E2E Tests</td><td>Appium Dry-Run</td><td>300</td><td class=\"pass\">' + mobilePass + '</td></tr>';
+          html += '<tr><td>⚙️ API Functional Tests</td><td>REST API</td><td>300</td><td class=\"pass\">' + apiPass + '</td></tr>';
+          html += '<tr><td>⚡ API Load Testing</td><td>Load & Concurrency</td><td>300</td><td class=\"pass\">' + loadPass + '</td></tr>';
+          html += '</tbody></table></div>';
+          html += '<p>Generated on ' + new Date().toUTCString() + '</p></body></html>';
 
-      - name: 🗂️ List All Downloaded Reports
-        run: |
-          echo "=== Reports Directory Structure ==="
-          find reports/ -type f | sort
+          fs.writeFileSync('reports/index.html', html);
+          "
 
       - name: 📦 Upload Aggregated Reports Bundle
         uses: actions/upload-artifact@v4
@@ -264,3 +323,15 @@ jobs:
           name: spendsense-all-reports
           path: reports/
           retention-days: 90
+
+      - name: 🌐 Setup GitHub Pages
+        uses: actions/configure-pages@v4
+
+      - name: 📦 Upload Pages Artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: reports/
+
+      - name: 🚀 Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4
