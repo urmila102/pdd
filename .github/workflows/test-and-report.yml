@@ -20,6 +20,9 @@ concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
 
+env:
+  ACTIONS_ALLOW_USE_UNSECURE_NODE_VERSION: 'true'
+
 permissions:
   contents: read
   pages: write
@@ -325,13 +328,18 @@ jobs:
           retention-days: 90
 
       - name: 🌐 Setup GitHub Pages
-        uses: actions/configure-pages@v4
+        uses: actions/configure-pages@v5
+        with:
+          enablement: true
+        continue-on-error: true
 
       - name: 📦 Upload Pages Artifact
         uses: actions/upload-pages-artifact@v3
         with:
           path: reports/
+        continue-on-error: true
 
       - name: 🚀 Deploy to GitHub Pages
         id: deployment
         uses: actions/deploy-pages@v4
+        continue-on-error: true
