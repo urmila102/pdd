@@ -193,7 +193,15 @@ function writeGitHubSummary() {
   Object.entries(catBreak).forEach(([cat, d]) => { md += `| ${cat} | ${d.pass} | ${d.fail} | ${d.pass + d.fail} |\n`; });
   md += `\n## 🧪 Test Suites\n\n| Suite | Tests | Technology |\n|-------|-------|------------|\n`;
   Object.entries(catBreak).forEach(([cat, d]) => { md += `| ${cat} | ${d.pass + d.fail} | Selenium WebDriver |\n`; });
-  md += `\n> 📥 Download the **frontend-selenium-report** artifact below for the full Excel analysis.\n`;
+  md += `\n<details>\n<summary><b>🔍 View All 300 Frontend Selenium Test Cases & Results</b></summary>\n\n`;
+  md += `| Test ID | Category | Description | Status | Latency |\n`;
+  md += `|---------|----------|-------------|--------|---------|\n`;
+  testSuite.forEach(tc => {
+    const sEmoji = tc.status === 'PASS' ? '✅ PASS' : '❌ FAIL';
+    md += `| ${tc.id} | ${tc.category} | ${tc.description} | ${sEmoji} | ${tc.duration}ms |\n`;
+  });
+  md += `\n</details>\n\n`;
+  md += `> 📥 Download the **frontend-selenium-report** artifact below for the full Excel analysis.\n`;
   fs.writeFileSync(summaryPath, md, { flag: 'a' });
   console.log('[INFO] GitHub Actions Step Summary written.');
 }

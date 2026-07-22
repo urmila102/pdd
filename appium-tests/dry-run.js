@@ -370,7 +370,14 @@ function writeGitHubSummary(passCount, failCount, total) {
   Object.entries(catBreakdown).forEach(([cat, data]) => {
     md += `| ${cat} | ${data.pass + data.fail} | DRY-RUN |\n`;
   });
-  md += `\n`;
+  md += `\n<details>\n<summary><b>🔍 View All 300 Appium Mobile Test Cases & Results</b></summary>\n\n`;
+  md += `| Test ID | Category | Description | Status | Latency |\n`;
+  md += `|---------|----------|-------------|--------|---------|\n`;
+  testSuiteRaw.forEach(tc => {
+    const sEmoji = tc.status === 'PASS' ? '✅ PASS' : '❌ FAIL';
+    md += `| ${tc.id} | ${tc.category} | ${tc.description} | ${sEmoji} | ${tc.duration}ms |\n`;
+  });
+  md += `\n</details>\n\n`;
   md += `> 💡 **Note**: Dry-run validates configuration and test suite definitions. Live execution requires Android emulator/device + running Appium server.\n`;
   md += `>\n> 📥 Download the **appium-dryrun-report** artifact below to view the full Excel report.\n`;
 

@@ -69,7 +69,7 @@ jobs:
         with:
           name: frontend-selenium-report
           path: selenium-tests/selenium_report.xlsx
-          retention-days: 30
+          retention-days: 90
 
   # ─────────────────────────────────────────
   #  JOB 2: Backend API E2E Tests
@@ -111,7 +111,7 @@ jobs:
         with:
           name: backend-api-report
           path: backend-tests/backend_report.xlsx
-          retention-days: 30
+          retention-days: 90
 
   # ─────────────────────────────────────────
   #  JOB 3: Appium Mobile Dry-Run + Report
@@ -148,7 +148,7 @@ jobs:
         with:
           name: appium-dryrun-report
           path: appium-tests/appium_dryrun_report.xlsx
-          retention-days: 30
+          retention-days: 90
 
   # ─────────────────────────────────────────
   #  JOB 4: Aggregate Reports + Summary
@@ -263,4 +263,4 @@ jobs:
         with:
           name: spendsense-all-reports
           path: reports/
-          retention-days: 30
+          retention-days: 90
